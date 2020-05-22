@@ -2,38 +2,50 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from copy import deepcopy
+from itertools import *
+import time
 
-# Global variables (specific to the problem at hand)
-# TODO: make these modifiable by the user (A GA_Problem class?)
+
 items = np.array([(5,3), (6,2), (1,4), (9,5), (2,8), (8,9), (4,10), (3,1), (7,6), (10,7)])
 CAPACITY = 20
 NUM_GENES = len(items)
 
-# #### Random Individual
-# * Generates a random individual with `length=10` number of genes.
+# TODO:
+# Global variables (specific to the problem at hand)
+# TODO: make these modifiable by the user (A GA_Problem class?)
+
 def random_individual(length=NUM_GENES):
+    """
+    Generates a random individual with number of genes of a given length.
+    Each gene is either a 0 or 1.
+    """
     return np.random.randint(low = 0, high = 2, size = length)
 
-# #### Random Population
-# * Generates a population with `population_size` number of individuals.
-# * Each individual will have `length` number of genes.
 def random_population(population_size=100, length=10, vectorized=False):
+    """
+    Generates a population with `population_size` number of individuals.
+    Each individual will have `length` number of genes.
+    """
     list_of_individuals = [random_individual(length) for i in range(population_size)]
     if vectorized:
         return np.array(list_of_individuals)
     else:
         return list_of_individuals
 
-# #### Evaluate Individual
-# * Given an individual, returns the total benefit and total volume.
 def evaluate_individual(individual):
+    """
+    Given an individual, returns the total benefit and total volume.
+    """
     total_benefit = sum(individual * items[:, 0])
     total_volume = sum(individual * items[:, 1])
     return total_benefit, total_volume
 
-# #### Mutate
-# * Given an individual, flip a random gene.
+
 def mutate(individual):
+    """
+    Given an individual, returns a new individual with a random gene flipped.
+    Does not modify the original individual.
+    """
     individual = deepcopy(individual)
     index = random.randint(0,len(individual)-1)
     if individual[index] == 0:
@@ -42,18 +54,35 @@ def mutate(individual):
         individual[index] = 0
     return individual
 
-# #### Mutate Population
-# * Given a population, mutate all individuals. Return a new population.
-# * Don't modify the original population.
+def mutate_v2(individual, p=1):
+    """
+    Flips each gene with probability p.
+    Returns a new individual.
+    """
+    individual = deepcopy(individual)
+    for i in range(len(individual)):
+        roll = random.random()
+        if roll <= p:
+            if individual[i] == 0:
+                individual[i] = 1
+            else:
+                individual[i] = 0
+    return individual
+
 def mutate_population(population):
+    """
+    Given a population, returns a new population where each gene is mutated.
+    Does not modify the original population.
+    """
     new_population = []
     for individual in population:
         new_population.append(mutate(individual))
     return new_population
 
-# #### Fitness
-# * Given an individual, evaluate its fitness.
 def fitness(individual):
+    """
+    Evaluates an individual's fitness level.
+    """
     benefit, volume = evaluate_individual(individual)
     if volume > 20:
         fitness = benefit - (4)*abs(volume - CAPACITY)
@@ -65,18 +94,25 @@ def fitness(individual):
 # * Generate individuals randomly, return the one with the highest fitness.
 # * Just a Baseline model
 def random_search(epochs = 1000):
-    best_solution = None
-    best_fitness = 0
-    for i in range(epochs):
-        indiv_i = random_individual()
-        fitness_i = fitness(indiv_i)
-        if fitness_i > best_fitness:
-            best_fitness, best_solution = fitness_i, indiv_i
+    start_time = time.time()
 
-    print("Best individual: ", best_solution)
-    best_benefit, best_volume = evaluate_individual(best_solution)
+    best_individual = None
+    best_benefit = 0
+
+    for i in range(epochs):
+        individual_i = random_individual()
+        benefit_i, volume_i = evaluate_individual(individual_i)
+        if benefit_i > best_benefit and volume_i <= CAPACITY:
+            best_benefit = benefit_i
+            best_individual = individual_i
+
+    print("Best individual: ", best_individual)
+    best_benefit, best_volume = evaluate_individual(best_individual)
     print("Benefit: ", best_benefit)
     print("Volume: ", best_volume)
+
+    print("Random search took", str(time.time() - start_time)[0:6], "seconds to run")
+
 
 
 ### Brute Force
@@ -84,7 +120,11 @@ def random_search(epochs = 1000):
 # * **Benefit**: 33
 # * **Volume**: 18
 def brute_force():
-    # enumerate all possible solutions
+    """
+    HEY
+    """
+    start_time = time.time()
+
     all_solutions = list(product([0, 1], repeat=10))
 
     best_solution = None
@@ -100,7 +140,12 @@ def brute_force():
     print("Benefit: ", best_benefit)
     print("Volume: ", best_volume)
 
-def hill_climber(EPOCH=30):
+    print("Brute force took", str(time.time() - start_time)[0:6], "seconds to run")
+
+
+def hill_climber(EPOCH=100):
+    start_time = time.time()
+
     individual = random_individual()
     scores = []
     for generation in range(EPOCH):
@@ -119,14 +164,10 @@ def hill_climber(EPOCH=30):
     benefit, volume = evaluate_individual(individual)
     print("Benefit: ", benefit)
     print("Capactiy: ", volume)
-    return scores
 
-def hill_climber_graph():
-    scores = hill_climber()
-    plt.xlabel("Generation")
-    plt.ylabel("Fitness")
-    plt.title("Single Hill Climber")
-    plt.plot(scores);
+    print("Hill climber took", str(time.time() - start_time)[0:6], "seconds to run")
+
+    return scores
 
 
 # ### Population of Hill Climbers
@@ -187,3 +228,8 @@ def hill_climbers(population_size=200, EPOCH=50000):
     plt.plot(np.transpose(scores));
 
     return benefits
+
+
+
+# Every film should have its own world, a logic and feel to it that expands beyond the exact image that the audience is seeing.
+# When I make a film, I am hoping to reinvent the genre a little bit. I just do it my way. I make my own little Quentin versions of them...
